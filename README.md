@@ -1075,23 +1075,11 @@ SOFTWARE.
 - [Network Domain](https://chromedevtools.github.io/devtools-protocol/tot/Network/)
 - [Debugger Domain](https://chromedevtools.github.io/devtools-protocol/tot/Debugger/)
 
-### Related Tools
-- [Puppeteer](https://pptr.dev/) - Headless Chrome automation
-- [Playwright](https://playwright.dev/) - Browser automation
-- [Selenium](https://www.selenium.dev/) - Browser testing framework
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/cdp-commander/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/cdp-commander/discussions)
-- **Email**: support@cdpcommander.example.com
 
 ## 🙏 Acknowledgments
 
 - Chrome DevTools Team for the CDP protocol
 - Open source community for inspiration and feedback
-- All contributors and users of CDP Commander
-
 ---
 
 **Made with ❤️ by developers, for developers**
