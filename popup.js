@@ -64,6 +64,16 @@ const CDP_METHODS = [
 
 // Initialize on popup load
 document.addEventListener('DOMContentLoaded', async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isWindowMode = urlParams.get('mode') === 'window';
+  const isSidePanelMode = urlParams.get('mode') === 'sidepanel';
+  if (isWindowMode) {
+    document.body.classList.add('window-mode');
+  }
+  if (isSidePanelMode) {
+    document.body.classList.add('sidepanel-mode');
+  }
+
   await loadCurrentTab();
   await refreshTabs();
 
@@ -189,6 +199,12 @@ async function dockToRight() {
     // Get the current window
     const currentWindow = await chrome.windows.getCurrent();
 
+    // Ensure side panel uses sidepanel mode page
+    await chrome.sidePanel.setOptions({
+      path: 'popup.html?mode=sidepanel',
+      enabled: true
+    });
+
     // Open the side panel
     await chrome.sidePanel.open({ windowId: currentWindow.id });
 
@@ -200,9 +216,8 @@ async function dockToRight() {
   }
 }
 
-// Open popup in a new window
 function openInWindow() {
-  const popupUrl = chrome.runtime.getURL('popup.html');
+  const popupUrl = chrome.runtime.getURL('popup.html?mode=window');
   chrome.windows.create({
     url: popupUrl,
     type: 'popup',

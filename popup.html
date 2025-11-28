@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      min-width: 600px;
-      max-width: 100%;
       width: 600px;
+      max-width: 100%;
+      min-width: 600px;
       padding: 15px;
       margin: 0;
       box-sizing: border-box;
@@ -16,24 +16,26 @@
       font-size: 14px;
     }
 
-    /* Popup mode (extension popup) */
-    @media (max-width: 1000px) {
-      body {
-        width: 800px;
-      }
+    /* Responsive layout for window mode */
+    body.window-mode {
+      width: 100%;
+      max-width: 100%;
+      min-width: 320px;
+      margin: 0 auto;
     }
 
     /* Side panel or narrow screens */
     @media (max-width: 700px) {
-      body {
-        width: 100%;
+      body,
+      body.window-mode {
         padding: 10px;
       }
     }
 
     /* Mobile or very narrow */
     @media (max-width: 400px) {
-      body {
+      body,
+      body.window-mode {
         padding: 8px;
         font-size: 13px;
       }
@@ -546,6 +548,21 @@
       width: 16px;
       height: 16px;
       flex-shrink: 0;
+    }
+
+    /* Hide dock controls in window mode */
+    body.window-mode .dock-controls {
+      display: none;
+    }
+
+    /* Side panel mode: only show "Open in Window" */
+    body.sidepanel-mode .dock-label,
+    body.sidepanel-mode #dockRightBtn {
+      display: none;
+    }
+
+    body.sidepanel-mode .dock-controls {
+      justify-content: flex-end;
     }
 
     /* Responsive dock controls */
