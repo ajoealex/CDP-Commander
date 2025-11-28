@@ -975,9 +975,6 @@ A: No, chrome-extension:// and chrome:// URLs are filtered out for security reas
 **Q: Does this interfere with DevTools?**
 A: CDP sessions are exclusive. Close DevTools before using this extension, or vice versa.
 
-**Q: Can I use this for automation?**
-A: Yes, but consider using Puppeteer or Selenium for full automation. This extension is designed for manual testing and debugging.
-
 **Q: Are CDP commands persistent?**
 A: No, effects (like enabled domains) are session-specific. Closing the session resets state.
 
@@ -1075,12 +1072,6 @@ SOFTWARE.
 - [Network Domain](https://chromedevtools.github.io/devtools-protocol/tot/Network/)
 - [Debugger Domain](https://chromedevtools.github.io/devtools-protocol/tot/Debugger/)
 
-
-## 🙏 Acknowledgments
-
-- Chrome DevTools Team for the CDP protocol
-- Open source community for inspiration and feedback
----
 
 **Made with ❤️ by developers, for developers**
 
