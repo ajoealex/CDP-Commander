@@ -586,6 +586,7 @@
       resize: vertical;
     }
 
+
     .bulk-progress {
       margin-top: 10px;
       padding: 10px;
@@ -706,6 +707,9 @@
 
     <div class="section">
       <label for="paramsInput">Parameters (JSON):</label>
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;">
+        <button id="formatJsonBtn" class="filter-btn" style="font-size: 11px; padding: 4px 8px;" title="Format JSON">Format JSON</button>
+      </div>
       <textarea id="paramsInput" placeholder='e.g., {"expression": "document.title"}'></textarea>
     </div>
   </div>
@@ -750,7 +754,7 @@
       <div class="empty-log">No messages yet. Execute a CDP command to see it here.</div>
     </div>
   </div>
-  
+
   <script src="popup.js"></script>
 </body>
 </html>

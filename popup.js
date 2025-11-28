@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('refreshFrames').addEventListener('click', refreshFrames);
   document.getElementById('executeBtn').addEventListener('click', executeCDP);
   document.getElementById('toggleModeBtn').addEventListener('click', toggleCommandMode);
+  document.getElementById('formatJsonBtn').addEventListener('click', formatMonacoJson);
 
   // Autocomplete for CDP method input
   const methodInput = document.getElementById('methodInput');
@@ -408,6 +409,23 @@ function displayFrames() {
   // Auto-select the TOP frame
   if (topFrameId) {
     frameSelect.value = topFrameId;
+  }
+}
+
+// Format JSON in params textarea
+function formatMonacoJson() {
+  const paramsInput = document.getElementById('paramsInput');
+
+  try {
+    const content = paramsInput.value.trim();
+    if (content) {
+      const parsed = JSON.parse(content);
+      const formatted = JSON.stringify(parsed, null, 2);
+      paramsInput.value = formatted;
+      showResult('JSON formatted successfully!', 'success');
+    }
+  } catch (error) {
+    showResult(`Invalid JSON: ${error.message}`, 'error');
   }
 }
 
@@ -1117,11 +1135,14 @@ function handleCommandPaste(e) {
 
     try {
       // Validate JSON
-      JSON.parse(restOfContent);
+      const parsedJson = JSON.parse(restOfContent);
+
+      // Format JSON with proper indentation
+      const formattedJson = JSON.stringify(parsedJson, null, 2);
 
       // Auto-fill the fields
       document.getElementById('methodInput').value = firstLine;
-      document.getElementById('paramsInput').value = restOfContent;
+      document.getElementById('paramsInput').value = formattedJson;
 
       showResult('Command and parameters extracted successfully!', 'success');
 

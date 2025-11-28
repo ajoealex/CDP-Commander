@@ -24,6 +24,9 @@ A powerful Chrome extension that enables direct execution of Chrome DevTools Pro
   - **Window Mode**: Open in a dedicated window for maximum workspace flexibility
 - **Intelligent Auto-Selection**: Automatically selects the current tab and first frame on launch
 - **Autocomplete Support**: Built-in autocomplete for 60+ CDP methods across 15 domains
+- **Smart Paste**: Automatically extracts command and parameters from pasted content
+- **JSON Formatting**: One-click JSON formatter for parameter beautification
+- **Bulk Command Mode**: Execute multiple CDP commands sequentially in a single batch
 - **Message Filtering**: Filter CDP messages by direction (All/Outgoing/Incoming)
 - **Search Functionality**: Search through message logs by method name or parameters
 - **Export to JSON**: Download all CDP messages as a formatted JSON file for analysis
@@ -45,6 +48,7 @@ A powerful Chrome extension that enables direct execution of Chrome DevTools Pro
 - [📖 Usage Guide](#-usage-guide)
   - [Selecting Tabs and Frames](#selecting-tabs-and-frames)
   - [Executing CDP Commands](#executing-cdp-commands)
+  - [Bulk Command Mode](#bulk-command-mode)
   - [Monitoring CDP Messages](#monitoring-cdp-messages)
   - [Managing Sessions](#managing-sessions)
   - [Display Modes](#display-modes)
@@ -146,6 +150,7 @@ A powerful Chrome extension that enables direct execution of Chrome DevTools Pro
 #### Parameters Input
 - **JSON Format**: Parameters must be valid JSON
 - **Optional**: Leave blank for commands without parameters
+- **Format JSON Button**: Click to automatically format and beautify your JSON
 - **Examples**:
   ```json
   {}
@@ -160,12 +165,89 @@ A powerful Chrome extension that enables direct execution of Chrome DevTools Pro
   }
   ```
 
+#### Smart Paste Feature
+You can paste commands in a simple format and CDP Commander will automatically extract them:
+
+**Format**:
+```
+CommandName.method
+{json parameters}
+```
+
+**Example**:
+```
+Runtime.evaluate
+{"expression": "document.title"}
+```
+
+When you paste this into either the **Method** or **Parameters** field, CDP Commander will:
+1. Extract `Runtime.evaluate` and place it in the Method field
+2. Extract and format the JSON parameters in the Parameters field
+3. Show a success message confirming extraction
+
+This works in both **single command mode** and when pasting into individual fields!
+
 #### Execution
 - Click **"Execute CDP Command"** button
 - The button is disabled while executing
 - Results appear in the result panel below
 - **Success**: Green background with formatted JSON result
 - **Error**: Red background with error message
+
+### Bulk Command Mode
+
+Execute multiple CDP commands sequentially in a single batch operation.
+
+#### Switching Modes
+- Click the **"Bulk Mode"** button to switch from single to bulk command mode
+- Click **"Single Mode"** to switch back
+- The execute button text changes to reflect the current mode
+
+#### Bulk Command Format
+Enter multiple commands in this format:
+```
+Network.enable
+{}
+
+Network.setExtraHTTPHeaders
+{
+  "headers": {
+    "X-Custom-Header": "value"
+  }
+}
+
+Page.navigate
+{"url": "https://example.com"}
+```
+
+**Rules**:
+- Each command starts with the method name on its own line
+- JSON parameters follow on the next lines
+- Empty lines between commands are optional
+- JSON can span multiple lines for readability
+
+#### Execution & Progress
+- Click **"Execute Bulk Commands"** to run all commands sequentially
+- A progress indicator shows which command is currently executing
+- Example: "Executing 2 of 3: Network.setExtraHTTPHeaders"
+- Commands execute in order, one after another
+
+#### Results Summary
+After execution, you'll see a summary:
+```
+Executed 3 command(s):
+✓ Success: 2
+✗ Failed: 1
+
+Failed commands:
+- Page.navigate: Invalid URL format
+```
+
+#### Use Cases
+- Setting up test environments (enable network tracking, set headers, navigate)
+- Batch configuration changes
+- Running multiple related commands without manual clicking
+- Automating repetitive command sequences
 
 ### Monitoring CDP Messages
 
