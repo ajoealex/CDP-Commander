@@ -550,6 +550,62 @@
       flex-shrink: 0;
     }
 
+    /* Bulk command mode styles */
+    .mode-toggle-container {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .mode-toggle-btn {
+      padding: 6px 12px;
+      background-color: #f5f5f5;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      width: auto;
+    }
+
+    .mode-toggle-btn:hover {
+      background-color: #e8e8e8;
+    }
+
+    .mode-toggle-btn.active {
+      background-color: #4285f4;
+      color: white;
+      border-color: #4285f4;
+    }
+
+    #bulkCommandInput {
+      font-family: 'Courier New', monospace;
+      min-height: 200px;
+      resize: vertical;
+    }
+
+
+    .bulk-progress {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f7ff;
+      border-radius: 4px;
+      border: 1px solid #4285f4;
+      display: none;
+      font-size: 12px;
+    }
+
+    .bulk-progress.show {
+      display: block;
+    }
+
+    .bulk-progress-text {
+      color: #333;
+      margin-bottom: 5px;
+    }
+
     /* Hide dock controls in window mode */
     body.window-mode .dock-controls {
       display: none;
@@ -635,21 +691,43 @@
     </select>
   </div>
   
-  <div class="section">
-    <label for="methodInput">CDP Method:</label>
-    <div class="autocomplete-wrapper">
-      <input type="text" id="methodInput" placeholder="e.g., Runtime.evaluate" autocomplete="off" />
-      <div id="autocompleteList" class="autocomplete-list"></div>
+  <div class="mode-toggle-container">
+    <button id="toggleModeBtn" class="mode-toggle-btn" title="Switch to bulk command mode">Bulk Mode</button>
+  </div>
+
+  <!-- Single Command Mode -->
+  <div id="singleCommandMode">
+    <div class="section">
+      <label for="methodInput">CDP Method:</label>
+      <div class="autocomplete-wrapper">
+        <input type="text" id="methodInput" placeholder="e.g., Runtime.evaluate" autocomplete="off" />
+        <div id="autocompleteList" class="autocomplete-list"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <label for="paramsInput">Parameters (JSON):</label>
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;">
+        <button id="formatJsonBtn" class="filter-btn" style="font-size: 11px; padding: 4px 8px;" title="Format JSON">Format JSON</button>
+      </div>
+      <textarea id="paramsInput" placeholder='e.g., {"expression": "document.title"}'></textarea>
     </div>
   </div>
-  
-  <div class="section">
-    <label for="paramsInput">Parameters (JSON):</label>
-    <textarea id="paramsInput" placeholder='e.g., {"expression": "document.title"}'></textarea>
+
+  <!-- Bulk Command Mode -->
+  <div id="bulkCommandMode" style="display: none;">
+    <div class="section">
+      <label for="bulkCommandInput">Bulk Commands:</label>
+      <textarea id="bulkCommandInput" placeholder="Enter multiple commands in the format:&#10;&#10;Network.enable&#10;{}&#10;&#10;Network.setExtraHTTPHeaders&#10;{&#10;  &quot;headers&quot;: {&#10;    &quot;test&quot;: &quot;test value&quot;&#10;  }&#10;}"></textarea>
+    </div>
   </div>
-  
+
   <button id="executeBtn">Execute CDP Command</button>
-  
+
+  <div id="bulkProgress" class="bulk-progress">
+    <div class="bulk-progress-text" id="bulkProgressText">Executing commands...</div>
+  </div>
+
   <div id="result"></div>
   
   <!-- Monitor Panel -->
@@ -676,7 +754,7 @@
       <div class="empty-log">No messages yet. Execute a CDP command to see it here.</div>
     </div>
   </div>
-  
+
   <script src="popup.js"></script>
 </body>
 </html>
