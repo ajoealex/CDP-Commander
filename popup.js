@@ -7,6 +7,8 @@ let isLogPaused = false;
 let pausedNewMessages = 0;
 let visibleMessageLimit = null;
 let autocompleteIndex = -1;
+let isBulkMode = false;
+let isBulkExecuting = false;
 
 // Comprehensive list of CDP methods
 const CDP_METHODS = [
@@ -84,12 +86,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('tabSelect').addEventListener('change', onTabSelect);
   document.getElementById('refreshFrames').addEventListener('click', refreshFrames);
   document.getElementById('executeBtn').addEventListener('click', executeCDP);
+  document.getElementById('toggleModeBtn').addEventListener('click', toggleCommandMode);
 
   // Autocomplete for CDP method input
   const methodInput = document.getElementById('methodInput');
   methodInput.addEventListener('input', handleAutocomplete);
   methodInput.addEventListener('keydown', handleAutocompleteKeydown);
   methodInput.addEventListener('blur', () => setTimeout(hideAutocomplete, 200));
+
+  // Handle paste events for auto-extraction of command and params
+  methodInput.addEventListener('paste', handleCommandPaste);
+  document.getElementById('paramsInput').addEventListener('paste', handleCommandPaste);
+  document.getElementById('bulkCommandInput').addEventListener('paste', handleBulkCommandPaste);
 
   // Monitor controls
   document.getElementById('filterAll').addEventListener('click', () => setFilter('all'));
@@ -403,28 +411,219 @@ function displayFrames() {
   }
 }
 
-// Execute CDP command
+// Toggle between single and bulk command mode
+function toggleCommandMode() {
+  isBulkMode = !isBulkMode;
+
+  const toggleBtn = document.getElementById('toggleModeBtn');
+  const singleMode = document.getElementById('singleCommandMode');
+  const bulkMode = document.getElementById('bulkCommandMode');
+  const executeBtn = document.getElementById('executeBtn');
+
+  if (isBulkMode) {
+    singleMode.style.display = 'none';
+    bulkMode.style.display = 'block';
+    toggleBtn.classList.add('active');
+    toggleBtn.textContent = 'Single Mode';
+    toggleBtn.title = 'Switch to single command mode';
+    executeBtn.textContent = 'Execute Bulk Commands';
+  } else {
+    singleMode.style.display = 'block';
+    bulkMode.style.display = 'none';
+    toggleBtn.classList.remove('active');
+    toggleBtn.textContent = 'Bulk Mode';
+    toggleBtn.title = 'Switch to bulk command mode';
+    executeBtn.textContent = 'Execute CDP Command';
+  }
+}
+
+// Parse bulk commands from text input
+function parseBulkCommands(bulkText) {
+  const commands = [];
+  const lines = bulkText.trim().split('\n');
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i].trim();
+
+    // Skip empty lines
+    if (!line) {
+      i++;
+      continue;
+    }
+
+    // Check if line looks like a CDP command (Domain.method)
+    const commandPattern = /^[A-Z][a-zA-Z]+\.[a-zA-Z]+$/;
+
+    if (commandPattern.test(line)) {
+      const method = line;
+      i++;
+
+      // Collect JSON parameters (may span multiple lines)
+      let jsonText = '';
+      let braceCount = 0;
+      let jsonStarted = false;
+
+      while (i < lines.length) {
+        const currentLine = lines[i].trim();
+
+        if (!currentLine) {
+          if (!jsonStarted) {
+            i++;
+            continue;
+          } else {
+            break; // End of JSON
+          }
+        }
+
+        jsonText += currentLine + '\n';
+
+        // Count braces to track JSON object boundaries
+        for (const char of currentLine) {
+          if (char === '{') {
+            braceCount++;
+            jsonStarted = true;
+          } else if (char === '}') {
+            braceCount--;
+          }
+        }
+
+        i++;
+
+        // If we've closed all braces, JSON is complete
+        if (jsonStarted && braceCount === 0) {
+          break;
+        }
+      }
+
+      // Try to parse JSON
+      try {
+        const params = jsonText.trim() ? JSON.parse(jsonText.trim()) : {};
+        commands.push({ method, params });
+      } catch (error) {
+        throw new Error(`Invalid JSON for command "${method}": ${error.message}`);
+      }
+    } else {
+      i++;
+    }
+  }
+
+  return commands;
+}
+
+// Execute bulk commands sequentially
+async function executeBulkCommands() {
+  const bulkInput = document.getElementById('bulkCommandInput');
+  const bulkText = bulkInput.value.trim();
+
+  if (!bulkText) {
+    showResult('Please enter bulk commands', 'error');
+    return;
+  }
+
+  let commands;
+  try {
+    commands = parseBulkCommands(bulkText);
+  } catch (error) {
+    showResult(`Error parsing commands: ${error.message}`, 'error');
+    return;
+  }
+
+  if (commands.length === 0) {
+    showResult('No valid commands found', 'error');
+    return;
+  }
+
+  const frameSelect = document.getElementById('frameSelect');
+  const selectedFrameId = frameSelect.value;
+
+  if (!selectedFrameId) {
+    showResult('Please select a frame', 'error');
+    return;
+  }
+
+  const executeBtn = document.getElementById('executeBtn');
+  const bulkProgress = document.getElementById('bulkProgress');
+  const bulkProgressText = document.getElementById('bulkProgressText');
+
+  executeBtn.disabled = true;
+  isBulkExecuting = true;
+  bulkProgress.classList.add('show');
+
+  const results = [];
+
+  for (let i = 0; i < commands.length; i++) {
+    const { method, params } = commands[i];
+
+    bulkProgressText.textContent = `Executing ${i + 1} of ${commands.length}: ${method}`;
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'executeCDP',
+        tabId: currentTab.id,
+        frameId: selectedFrameId,
+        method: method,
+        params: params
+      });
+
+      if (response.success) {
+        results.push({ method, success: true, result: response.result });
+      } else {
+        results.push({ method, success: false, error: response.error });
+      }
+    } catch (error) {
+      results.push({ method, success: false, error: error.message });
+    }
+  }
+
+  // Show summary
+  const successCount = results.filter(r => r.success).length;
+  const failCount = results.length - successCount;
+
+  let summary = `Executed ${results.length} command(s):\n`;
+  summary += `✓ Success: ${successCount}\n`;
+  if (failCount > 0) {
+    summary += `✗ Failed: ${failCount}\n\n`;
+    summary += 'Failed commands:\n';
+    results.filter(r => !r.success).forEach(r => {
+      summary += `- ${r.method}: ${r.error}\n`;
+    });
+  }
+
+  showResult(summary, failCount > 0 ? 'error' : 'success');
+
+  executeBtn.disabled = false;
+  isBulkExecuting = false;
+  bulkProgress.classList.remove('show');
+}
+
+// Execute CDP command (handles both single and bulk modes)
 async function executeCDP() {
+  if (isBulkMode) {
+    await executeBulkCommands();
+    return;
+  }
+
   const frameSelect = document.getElementById('frameSelect');
   const methodInput = document.getElementById('methodInput');
   const paramsInput = document.getElementById('paramsInput');
   const executeBtn = document.getElementById('executeBtn');
-  
+
   const selectedFrameId = frameSelect.value;
   const method = methodInput.value.trim();
   const paramsText = paramsInput.value.trim();
-  
+
   // Validation
   if (!selectedFrameId) {
     showResult('Please select a frame', 'error');
     return;
   }
-  
+
   if (!method) {
     showResult('Please enter a CDP method', 'error');
     return;
   }
-  
+
   let params = {};
   if (paramsText) {
     try {
@@ -434,10 +633,10 @@ async function executeCDP() {
       return;
     }
   }
-  
+
   executeBtn.disabled = true;
   showResult('Executing...', 'loading');
-  
+
   try {
     // Send message to background script to execute CDP
     const response = await chrome.runtime.sendMessage({
@@ -447,7 +646,7 @@ async function executeCDP() {
       method: method,
       params: params
     });
-    
+
     if (response.success) {
       showResult(JSON.stringify(response.result, null, 2), 'success');
     } else {
@@ -890,4 +1089,66 @@ function hideAutocomplete() {
   const autocompleteList = document.getElementById('autocompleteList');
   autocompleteList.classList.remove('show');
   autocompleteIndex = -1;
+}
+
+// Handle paste events to auto-extract command and params (single mode)
+function handleCommandPaste(e) {
+  const pastedText = e.clipboardData.getData('text/plain');
+
+  // Try to match the pattern: <command name>\n{json}
+  // Pattern: line with command name, followed by JSON object
+  const lines = pastedText.trim().split('\n');
+
+  if (lines.length < 2) {
+    return; // Not enough lines, let default paste behavior happen
+  }
+
+  const firstLine = lines[0].trim();
+  const restOfContent = lines.slice(1).join('\n').trim();
+
+  // Check if first line looks like a CDP command (Domain.method)
+  const commandPattern = /^[A-Z][a-zA-Z]+\.[a-zA-Z]+$/;
+
+  // Check if the rest looks like JSON (starts with { and ends with })
+  const jsonPattern = /^\{[\s\S]*\}$/;
+
+  if (commandPattern.test(firstLine) && jsonPattern.test(restOfContent)) {
+    e.preventDefault(); // Prevent default paste
+
+    try {
+      // Validate JSON
+      JSON.parse(restOfContent);
+
+      // Auto-fill the fields
+      document.getElementById('methodInput').value = firstLine;
+      document.getElementById('paramsInput').value = restOfContent;
+
+      showResult('Command and parameters extracted successfully!', 'success');
+
+      // Hide autocomplete if it was showing
+      hideAutocomplete();
+    } catch (error) {
+      // Invalid JSON, let default paste happen
+      console.log('JSON parsing failed, using default paste behavior');
+    }
+  }
+}
+
+// Handle paste events for bulk command mode
+function handleBulkCommandPaste(e) {
+  const pastedText = e.clipboardData.getData('text/plain');
+
+  // Check if the pasted text contains multiple commands
+  // Try to validate it's in the right format
+  try {
+    const commands = parseBulkCommands(pastedText);
+
+    if (commands.length > 0) {
+      // Valid bulk command format, let it paste normally
+      showResult(`Detected ${commands.length} command(s) in pasted text`, 'success');
+    }
+  } catch (error) {
+    // Not in bulk command format, but let it paste anyway
+    console.log('Pasted text not in bulk command format, allowing paste');
+  }
 }
