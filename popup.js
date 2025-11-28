@@ -3,6 +3,9 @@ let tabs = [];
 let frames = [];
 let messages = [];
 let currentFilter = 'all';
+let isLogPaused = false;
+let pausedNewMessages = 0;
+let visibleMessageLimit = null;
 let autocompleteIndex = -1;
 
 // Comprehensive list of CDP methods
@@ -84,7 +87,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('filterIncoming').addEventListener('click', () => setFilter('incoming'));
   document.getElementById('exportLog').addEventListener('click', exportLog);
   document.getElementById('clearLog').addEventListener('click', clearLog);
+  document.getElementById('toggleLogPause').addEventListener('click', toggleLogPause);
   document.getElementById('searchBox').addEventListener('input', filterMessages);
+
+  updatePauseButton();
   
   // Load existing messages from background
   loadExistingMessages();
@@ -452,6 +458,7 @@ async function loadExistingMessages() {
   try {
     if (!currentTab || !currentTab.id) {
       messages = [];
+      resetPauseState();
       renderMessages();
       return;
     }
@@ -463,10 +470,55 @@ async function loadExistingMessages() {
 
     if (response && response.messages) {
       messages = response.messages;
-      renderMessages();
+    } else {
+      messages = [];
     }
+
+    resetPauseState();
+    renderMessages();
   } catch (error) {
     console.error('Error loading messages:', error);
+  }
+}
+
+// Pause/resume log rendering without stopping collection
+function toggleLogPause() {
+  if (!isLogPaused) {
+    isLogPaused = true;
+    visibleMessageLimit = messages.length;
+    pausedNewMessages = 0;
+  } else {
+    isLogPaused = false;
+    visibleMessageLimit = null;
+    pausedNewMessages = 0;
+    renderMessages();
+  }
+
+  updatePauseButton();
+}
+
+// Reset pause state (used when switching tabs or clearing)
+function resetPauseState() {
+  isLogPaused = false;
+  pausedNewMessages = 0;
+  visibleMessageLimit = null;
+  updatePauseButton();
+}
+
+// Update pause button label and style
+function updatePauseButton() {
+  const pauseBtn = document.getElementById('toggleLogPause');
+  if (!pauseBtn) return;
+
+  if (isLogPaused) {
+    const countText = pausedNewMessages > 0 ? ` (${pausedNewMessages})` : '';
+    pauseBtn.textContent = `Resume Log${countText}`;
+    pauseBtn.classList.add('paused');
+    pauseBtn.title = 'Logging is paused. Click to resume and render new messages.';
+  } else {
+    pauseBtn.textContent = 'Pause Log';
+    pauseBtn.classList.remove('paused');
+    pauseBtn.title = 'Temporarily stop rendering new log entries';
   }
 }
 
@@ -482,6 +534,15 @@ function addMessage(message) {
   // Keep only last 100000 messages
   if (messages.length > 100000) {
     messages.shift();
+    if (visibleMessageLimit !== null) {
+      visibleMessageLimit = Math.max(visibleMessageLimit - 1, 0);
+    }
+  }
+
+  if (isLogPaused) {
+    pausedNewMessages += 1;
+    updatePauseButton();
+    return;
   }
 
   renderMessages();
@@ -518,7 +579,8 @@ function renderMessages(searchTerm = '') {
   const messageLog = document.getElementById('messageLog');
   
   // Filter messages
-  let filteredMessages = messages;
+  const logLimit = isLogPaused && visibleMessageLimit !== null ? visibleMessageLimit : messages.length;
+  let filteredMessages = messages.slice(0, logLimit);
   
   // Apply direction filter
   if (currentFilter !== 'all') {
@@ -549,7 +611,9 @@ function renderMessages(searchTerm = '') {
   });
   
   // Auto-scroll to bottom
-  messageLog.scrollTop = messageLog.scrollHeight;
+  if (!isLogPaused) {
+    messageLog.scrollTop = messageLog.scrollHeight;
+  }
 }
 
 // Create a message row element
@@ -703,6 +767,7 @@ function exportLog() {
 // Clear log
 function clearLog() {
   messages = [];
+  resetPauseState();
 
   // Clear messages for the currently selected tab
   if (currentTab && currentTab.id) {
