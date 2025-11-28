@@ -40,20 +40,21 @@ A powerful Chrome extension that enables direct execution of Chrome DevTools Pro
 
 ## 📋 Table of Contents
 
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Usage Guide](#usage-guide)
+- [🔧 Installation](#-installation)
+- [🚀 Quick Start](#-quick-start)
+- [📖 Usage Guide](#-usage-guide)
   - [Selecting Tabs and Frames](#selecting-tabs-and-frames)
   - [Executing CDP Commands](#executing-cdp-commands)
   - [Monitoring CDP Messages](#monitoring-cdp-messages)
   - [Managing Sessions](#managing-sessions)
-- [CDP Commands Reference](#cdp-commands-reference)
-- [Use Cases & Examples](#use-cases--examples)
-- [Architecture](#architecture)
-- [Troubleshooting](#troubleshooting)
-- [FAQ](#faq)
-- [Contributing](#contributing)
-- [License](#license)
+  - [Display Modes](#display-modes)
+- [📚 CDP Commands Reference](#-cdp-commands-reference)
+- [💡 Use Cases & Examples](#-use-cases--examples)
+- [🏗️ Architecture](#️-architecture)
+- [🔍 Troubleshooting](#-troubleshooting)
+- [❓ FAQ](#-faq)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
 ## 🔧 Installation
 
