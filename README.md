@@ -1,6 +1,8 @@
 # CDP Commander
 
 A powerful Chrome extension that enables direct execution of Chrome DevTools Protocol (CDP) commands on any frame within a web page. Perfect for developers, QA engineers, and automation enthusiasts who need fine-grained control over browser behavior.
+<img width="1280" height="799" alt="2" src="https://github.com/user-attachments/assets/d3ca5fc7-c716-4aac-a10a-a8201200f49b" />
+
 
 ![Version](https://img.shields.io/badge/version-1.0-blue.svg)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green.svg)
